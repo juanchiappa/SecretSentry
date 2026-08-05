@@ -1,0 +1,110 @@
+rules:
+  - id: aws-access-key-id
+    description: >
+      AWS Access Key ID. El prefijo AKIA + 16 caracteres alfanuméricos en
+      mayúscula es el formato fijo que usa AWS para IAM users (hay variantes
+      como ASIA para credenciales temporales, pero arrancamos con la más común).
+    pattern: 'AKIA[0-9A-Z]{16}'
+    severity: critical
+    tags: [aws, cloud]
+    requires_context: false
+
+  - id: aws-secret-access-key
+    description: >
+      AWS Secret Access Key. El valor en sí (40 chars base64-like) es
+      indistinguible de cualquier string random, por eso el patrón exige que
+      aparezca junto a una key típica (aws_secret_access_key, AWS_SECRET_...)
+      en la misma línea. Aun así, es el patrón con mayor chance de falso
+      positivo del set — por eso requires_context: true.
+    pattern: '(?i)aws_secret_access_key\s*[:=]\s*["'']?[A-Za-z0-9/+=]{40}["'']?'
+    severity: critical
+    tags: [aws, cloud]
+    requires_context: true
+
+  - id: github-pat-classic
+    description: >
+      GitHub Personal Access Token (formato clásico). El prefijo ghp_ seguido
+      de 36 caracteres alfanuméricos es fijo desde que GitHub introdujo
+      tokens con prefijo identificable en 2021.
+    pattern: 'ghp_[A-Za-z0-9]{36}'
+    severity: critical
+    tags: [github]
+    requires_context: false
+
+  - id: github-pat-fine-grained
+    description: >
+      GitHub Fine-grained Personal Access Token. Prefijo github_pat_ seguido
+      de 82 caracteres — formato nuevo de GitHub para tokens con permisos
+      granulares.
+    pattern: 'github_pat_[A-Za-z0-9_]{82}'
+    severity: critical
+    tags: [github]
+    requires_context: false
+
+  - id: github-oauth-token
+    description: >
+      GitHub OAuth Access Token. Prefijo gho_ + 36 caracteres, mismo esquema
+      de prefijos identificables que los PAT.
+    pattern: 'gho_[A-Za-z0-9]{36}'
+    severity: critical
+    tags: [github]
+    requires_context: false
+
+  - id: gcp-api-key
+    description: >
+      Google Cloud API Key. El prefijo AIza + 35 caracteres es el formato
+      fijo que usa Google para API keys generadas desde Cloud Console.
+    pattern: 'AIza[0-9A-Za-z\-_]{35}'
+    severity: critical
+    tags: [gcp, cloud]
+    requires_context: false
+
+  - id: stripe-live-secret-key
+    description: >
+      Stripe Live Secret Key. Prefijo sk_live_ indica explícitamente que es
+      de entorno productivo (a diferencia de sk_test_), por eso se marca
+      critical — es el caso de mayor impacto real si se filtra.
+    pattern: 'sk_live_[0-9a-zA-Z]{24,}'
+    severity: critical
+    tags: [stripe, payments]
+    requires_context: false
+
+  - id: stripe-restricted-key
+    description: >
+      Stripe Restricted Key (permisos acotados, pero igual sensible).
+      Prefijo rk_live_ análogo al de secret keys.
+    pattern: 'rk_live_[0-9a-zA-Z]{24,}'
+    severity: high
+    tags: [stripe, payments]
+    requires_context: false
+
+  - id: slack-token
+    description: >
+      Slack Token. El prefijo xox seguido de una letra que indica el tipo
+      (b=bot, a=app, p=user, r=refresh, s=session) es el formato documentado
+      oficialmente por Slack para todos sus tokens.
+    pattern: 'xox[baprs]-[0-9A-Za-z\-]{10,72}'
+    severity: high
+    tags: [slack]
+    requires_context: false
+
+  - id: jwt-generic
+    description: >
+      JSON Web Token genérico. Estructura header.payload.signature en
+      base64url, donde el header casi siempre arranca con eyJ (base64 de
+      '{"'). No identifica un proveedor puntual, pero un JWT commiteado casi
+      siempre es una sesión o credencial viva.
+    pattern: '\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b'
+    severity: medium
+    tags: [jwt, generic]
+    requires_context: false
+
+  - id: private-key-block
+    description: >
+      Bloque de clave privada SSH/PGP/RSA/EC/DSA en formato PEM. El header
+      -----BEGIN ... PRIVATE KEY----- es un delimitador estándar sin
+      ambigüedad posible: si aparece, hay una clave privada en el archivo.
+    pattern: '-----BEGIN ((RSA|OPENSSH|DSA|EC) PRIVATE KEY|PGP PRIVATE KEY BLOCK)-----'
+    severity: critical
+    tags: [ssh, pgp, private-key]
+    requires_context: false
